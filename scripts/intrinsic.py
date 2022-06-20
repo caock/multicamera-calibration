@@ -88,9 +88,11 @@ def filter_images(input_pattern, pattern, width, height):
             corners = cv2.cornerSubPix(gray, interest_points, (11, 11), (-1, -1), criteria)
             imgpoints.append(interest_points)
 
-             # Draw and display the corners
+            # Draw and display the corners
             cv2.drawChessboardCorners(img, (width, height), corners, ret)
             cv2.imwrite(f'{corners_path}/{img_name}.png', img)
+            # save corners to file
+            np.save(f'{corners_path}/{img_name}.npy', corners)
         else:
             to_del.append(i)
     while len(to_del) > 0:
@@ -129,6 +131,7 @@ def select_images(image_points, number_to_select):
 
 def main():
     opts = parse()
+    print(f'begin to get intrinsic for camera {opts.input}')
     images, image_points = filter_images(opts.input, opts.pattern, opts.width, opts.height)
     if opts.full_output is not None:
         for image in images:
@@ -147,6 +150,10 @@ def main():
         object_points[:, :2] = grid.T.reshape(-1, 2)
     else:
         object_points[:, :2] = np.mgrid[0:opts.width, 0:opts.height].T.reshape(-1, 2)
+    
+    # save object_points to file
+    np.save(f'{path.dirname(path.abspath(opts.input))}/object_points.npy', object_points)
+    
     opoints = [object_points for _ in range(len(selected_indices))]
     ipoints = [image_points[idx] for idx in selected_indices]
     image_resolution = cv2.imread(images[0]).shape[:-1][::-1]

@@ -56,8 +56,8 @@ class CalibrationInterface(object):
         self.image_points = {}
         self.undistorted_points = {}
         self.point3d = None
-        cv2.namedWindow(self.wname)
-        cv2.setMouseCallback(self.wname, self.get_points)
+        #cv2.namedWindow(self.wname)
+        #cv2.setMouseCallback(self.wname, self.get_points)
 
     @staticmethod
     def projection_matrix(rvec, tvec):

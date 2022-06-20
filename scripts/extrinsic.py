@@ -33,6 +33,7 @@ __status__ = "Production"
 __license__ = "GPLv3"
 
 from os import path
+from pathlib import Path
 from argparse import ArgumentParser
 import numpy as np
 import json
@@ -45,11 +46,11 @@ class CalibrationInterface(object):
     @classmethod
     def __init__(self, camera_matrix, distortion_coefficients, image, object_points=None,
                  image_points=None):
-        if None in [object_points, image_points]:
-            assert all(points is None for points in [object_points, image_points])
+        if object_points is None or image_points is None:
+            assert all(points is None for points in (object_points, image_points))
         else:
             assert len(object_points) == len(image_points)
-        self.wname = 'calibration interface'
+        #self.wname = 'calibration interface'
         self.camera_matrix = camera_matrix
         self.distortion_coefficients = distortion_coefficients
         self.subtext = ''
@@ -59,9 +60,9 @@ class CalibrationInterface(object):
         self.image = image
         self.image_points = [] if image_points is None else image_points
         self.object_points = [] if object_points is None else object_points
-        cv2.namedWindow(self.wname)
-        cv2.setMouseCallback(self.wname, self.get_points)
-        self.refresh()
+        #cv2.namedWindow(self.wname)
+        #cv2.setMouseCallback(self.wname, self.get_points)
+        #self.refresh()
 
     @classmethod
     def solve(self):
@@ -129,7 +130,7 @@ class CalibrationInterface(object):
                     self.state = self.GET_POINT
             if self.state == self.GET_POINT and key in ['s', 'q']:
                 break
-            self.refresh()
+            #self.refresh()
         return None if key == 'q' else self.solve()
 
     @classmethod
@@ -167,17 +168,31 @@ def main():
         cam_matrix = np.array(calibration['intrinsic'])
         distortion_coefficients = np.array(calibration['distortion_coefficients'])\
                                     .reshape((len(calibration['distortion_coefficients']), 1))
+
     if opts.points is not None:
+        '''
         with open(opts.points, 'r') as pfile:
             points = json.load(pfile)
             object_points = [tuple(point) for point in points['object_points']]
             image_points = [tuple(point) for point in points['image_points']]
             interface = CalibrationInterface(cam_matrix, distortion_coefficients, image,
                                              object_points, image_points)
-    else:
+        '''
+        data_path = path.dirname(path.abspath(opts.input))
+        img_name = Path(opts.input).resolve().stem
+        object_points_filename = f"{data_path}/object_points.npy"
+        image_points_filename = f"{data_path}/corners/{img_name}.npy"
+
+        image_points = np.load(image_points_filename, allow_pickle=True)
+        object_points = np.load(object_points_filename, allow_pickle=True)
+        interface = CalibrationInterface(cam_matrix, distortion_coefficients, image,
+                                            object_points, image_points)
+        results = interface.solve()
+    else:        
         interface = CalibrationInterface(cam_matrix, distortion_coefficients, image)
-    results = interface.run()
+        results = interface.run()
     if results is not None:
+        print(results[1].T)
         with open(opts.output, 'w') as ofile:
             json.dump(dict(rvec=results[0].tolist(), tvec=results[1].tolist()), ofile)
     if opts.output_points is not None:

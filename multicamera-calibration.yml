@@ -1,0 +1,12 @@
+name: multicamera-calibration
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - cmake
+  - compilers
+  - ceres-solver>=2.0.0
+  - gflags
+  - glog
+  - opencv
+  - numpy
